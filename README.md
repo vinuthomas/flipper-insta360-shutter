@@ -10,6 +10,21 @@ Use the Flipper Zero as a Bluetooth shutter remote for an Insta360 GO 3S. Once t
 | Stock Flipper Zero firmware 1.5.1 and a GO 3S | The camera skipped the app during discovery |
 | Other firmware versions or camera models | Untested |
 
+### Potential compatibility with other cameras
+
+Insta360 lists the following cameras as compatible with its [GPS Action Remote](https://store.insta360.com/in/product/gps-action-remote) (checked 8 November 2026):
+
+| Camera family | Models |
+| --- | --- |
+| X series | X4 Air, X5, X4, X3 and ONE X2 |
+| GO series | GO 3S and GO 3 |
+| Ace series | Ace Pro 2, Ace Pro and Ace |
+| Modular cameras | ONE RS (Twin/4K), ONE RS 1-Inch 360 Edition and ONE R |
+
+These models are potentially compatible with this app's shutter control based on GPS Action Remote support. **Only the GO 3S is hardware verified with this app. All other listed models are untested.** Official remote support doesn't guarantee that a camera accepts this app's pairing behavior and shutter commands. GPS, wake-up and other official remote features aren't implemented or verified by this app. The GPS Smart Remote and GPS Preview Remote are separate products with different compatibility lists.
+
+### GO 3S pairing requirement
+
 **An Action Pod is required for initial pairing.** The GO 3S uses the Action Pod's touchscreen to open **Bluetooth Remote** and select the Flipper. The GO 3S Retro Bundle ships without an Action Pod, so the camera and Retro Viewfinder alone can't complete these pairing steps. Insta360 confirms that the Retro camera can pair with a separately available GO 3S Action Pod. [Bluetooth Remote instructions](https://onlinemanual.insta360.com/gpsactionremote/en-us/troubleshooting/connect-problem) · [Retro Bundle details](https://onlinemanual.insta360.com/go3s/en-us/operating-tutorials/accessories-kit/retro-bundle/retro-bundle-intro)
 
 ## Why the firmware patch is needed
