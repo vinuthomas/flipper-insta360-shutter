@@ -18,9 +18,24 @@ The GO 3S didn't list the app on stock firmware 1.5.1. Stock firmware limits the
 
 The [firmware patch](firmware/README.md) advertises the full `Insta360 GPS Remote` name and puts `CE80` in a complete 16-bit service list. With both changes in place, the GO 3S discovered the Flipper, connected and responded to the shutter button. We tested the changes together, so we haven't isolated which one the camera requires.
 
-## Build and install the app
+## Installation
 
-You can install the app on the firmware already on your Flipper. A `.fap` is an app file that lives on the microSD card. Installing it leaves the firmware in place.
+Install the patched firmware first, then install the app. The firmware patch is required for the verified GO 3S setup. Installing the app alone on stock 1.5.1 doesn't let the camera discover the Flipper.
+
+### 1. Build and install the patched firmware
+
+The patch targets **Flipper Zero firmware 1.5.1**. Follow the [firmware build and installation instructions](firmware/README.md) to:
+
+1. Back up the Flipper's internal storage and microSD contents. Keep stock 1.5.1 available for rollback.
+2. Apply the patch to the specified 1.5.1 source revision and build the update package.
+3. Copy the generated update directory to the microSD card and install it through the normal updater.
+4. Let the Flipper reboot before installing the app.
+
+Other firmware releases or forks may need an adapted patch and their own hardware test.
+
+### 2. Build and install the app
+
+With the patched firmware installed:
 
 1. Install [uFBT](https://github.com/flipperdevices/flipperzero-ufbt). From this repo's root, build against the verified f7 SDK for 1.5.1 (API 88.2).
 
@@ -30,13 +45,7 @@ You can install the app on the firmware already on your Flipper. A `.fap` is an 
    ```
 
 2. In qFlipper, copy `dist/insta360_remote.fap` into **SD Card → apps → Bluetooth**. Open **Apps → Bluetooth → Insta360 Shutter** on the Flipper.
-3. Try [connecting the camera](#connect-and-shoot). If discovery, connection and shutter work on your firmware, you can use the app as installed.
-
-### When to install the firmware patch
-
-The patch targets **stock Flipper Zero firmware 1.5.1**, the [current stable release as of 8 November 2026](https://github.com/flipperdevices/flipperzero-firmware/releases/tag/1.5.1). On that release, the app loads but the GO 3S skips it during discovery. For the verified setup, follow the [separate firmware patch instructions](firmware/README.md).
-
-If you use a different firmware release or fork, try the app first. If the loader rejects the file or the build fails with that firmware's SDK, check app API compatibility before troubleshooting Bluetooth. If the app runs but the camera skips it, compare its advertisement with the [verified profile](#why-the-firmware-patch-is-needed). Other releases or forks may need an adapted patch and their own hardware test.
+3. Follow [Connect and shoot](#connect-and-shoot) to pair the camera and test the shutter.
 
 ## Connect and shoot
 
