@@ -1,0 +1,9 @@
+/dist/
+/.vscode/
+/.sconsign.dblite
+/.ufbt/
+.DS_Store
+*.fap
+*.elf
+*.dfu
+*.tgz

@@ -1,0 +1,8 @@
+App(
+    appid="insta360_remote",
+    name="Insta360 Shutter",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="insta360_remote_app",
+    stack_size=2048,
+    fap_category="Bluetooth",
+)
