@@ -8,6 +8,12 @@ On stock 1.5.1, the GO 3S didn't list the Flipper even though the app exposed th
 
 The patch matches the app's `CE80` profile and its complete-name marker `Insta360 GPS Rem`. It substitutes the full name and marks the `CE80` list complete. The marker fits the stock app interface, so the patch preserves the `GapConfig` layout and SDK API 88.2. The GO 3S discovered the Flipper and accepted both shutter presses with this combination. The test doesn't establish whether either change would work on its own.
 
+## Firmware detection and future updates
+
+The patch leaves USB detection and the app API in place. qFlipper decides which updates to offer from the device's reported firmware version, branch and build date. The tested build reports version 1.5.1 and branch `HEAD`. qFlipper classifies that branch as custom, so the update button can differ from the stock release. The folder that held the update package on the SD card doesn't control future update detection. [qFlipper channel detection](https://github.com/flipperdevices/qFlipper/blob/1d26683ff5b751f219a4e40443b7c8355eb39469/backend/flipperzero/helper/deviceinfohelper.cpp#L348) · [qFlipper update logic](https://github.com/flipperdevices/qFlipper/blob/1d26683ff5b751f219a4e40443b7c8355eb39469/backend/flipperzero/flipperzero.cpp#L68)
+
+An official firmware update replaces the patched firmware image. If the app already works on the new release, continue using it directly. Otherwise, check the patch with `git apply --check` against the new release, adapt it if needed and build an update from that release's source. Then verify the advertisement and retest discovery, connection and shutter. If the app API changed, rebuild the app with that release's SDK and check its imports. [Flipper update process](https://github.com/flipperdevices/flipperzero-firmware/blob/1.5.1/documentation/OTA.md)
+
 ## Build the update
 
 From the Flipper firmware checkout, replace the patch path with the path to this repo.
