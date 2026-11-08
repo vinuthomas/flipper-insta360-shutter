@@ -1,6 +1,12 @@
 # Firmware patch for Flipper Zero 1.5.1
 
-The patch applies to official Flipper Zero firmware 1.5.1 at commit `9e810dc399e027e48ce07751df72168abbb19065`. It changes advertising for the profile with service `CE80` and the complete-name marker `Insta360 GPS Rem`. That profile gets the full `Insta360 GPS Remote` name and a complete 16-bit service list. The marker fits the stock app interface, so the patch preserves the existing `GapConfig` layout and SDK API 88.2.
+The patch applies to official Flipper Zero firmware 1.5.1 at commit `9e810dc399e027e48ce07751df72168abbb19065`.
+
+## Why the patch is needed
+
+On stock 1.5.1, the GO 3S didn't list the Flipper even though the app exposed the same `CE80` service and characteristics as the working Android remote. Discovery happens before the camera can use those characteristics. The stock `GapConfig` interface leaves 16 characters for the advertised name after the advertising type byte and the string terminator. `Insta360 GPS Remote` is 19 characters. The firmware also labels 16-bit service lists as incomplete (`0x02`), with no app setting to select a complete list (`0x03`). [Flipper advertising code](https://github.com/flipperdevices/flipperzero-firmware/blob/1.5.1/targets/f7/ble_glue/gap.c)
+
+The patch matches the app's `CE80` profile and its complete-name marker `Insta360 GPS Rem`. It substitutes the full name and marks the `CE80` list complete. The marker fits the stock app interface, so the patch preserves the `GapConfig` layout and SDK API 88.2. The GO 3S discovered the Flipper and accepted both shutter presses with this combination. The test doesn't establish whether either change would work on its own.
 
 ## Build the update
 

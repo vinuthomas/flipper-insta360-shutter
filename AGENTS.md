@@ -4,8 +4,10 @@
 
 - The app source is `insta360_remote.c`. Its Flipper app manifest is `application.fam`.
 - Read `README.md`, `docs/protocol-and-testing.md` and `firmware/README.md` before changing Bluetooth behavior.
-- Preserve the GO 3S discovery, connection and shutter path documented in README.md.
-- Treat the app's advertised name, CE80 UUID and advertising name type as a contract with the firmware patch. Change both sides together when needed.
+- Preserve the hardware-verified path from 8 November 2026. The GO 3S discovered the Flipper on patched 1.5.1, connected, subscribed to CE82 and started and stopped video with two OK presses. Both phone remotes were off. The repository build has a renamed menu entry and passed the build check. The hardware test used the earlier label.
+- Stock 1.5.1 hosted the same CE80 service but the GO 3S skipped discovery. The patch targets the app's CE80 profile and complete-name marker `Insta360 GPS Rem`. It advertises `Insta360 GPS Remote` and a complete 16-bit CE80 list without changing the app API. Treat the marker, name type and UUID as a contract with the patch.
+- The successful test used the full name, complete service list and captured manufacturer data together. Their individual effects are unverified. Keep this configuration as the working baseline when investigating discovery.
+- Mode switching is paused. One Android mode-cycle notification produced no visible change on the GO 3S. The supported action is shutter start/stop. Wake-up, GPS, power-cycle reconnect and other camera models need hardware verification.
 
 ## Build and verification
 
@@ -13,7 +15,9 @@
 - Use `ufbt` from the repository root. If the SDK needs setup, use the exact SDK URL in `README.md`. Do not silently switch to the latest SDK.
 - For firmware patch changes, run `git apply --check` against the upstream revision specified in `firmware/README.md` when that checkout is available.
 - Report the checks actually run and any hardware validation still needed. Do not claim camera behavior from a successful build alone.
-- Preserve restoration of the Flipper's normal Bluetooth profile when the app exits.
+- On hardware, check the complete advertised name and CE80 list first. Then verify camera discovery, CE82 subscription and the Action Pod recording indicator after each OK press. Stop the Android advertiser and close Multicam before this test.
+- Keep CE83's `01 02` value and the connection-local shutter sequence, which starts at zero and advances by two per press. The two verified frames are in `docs/protocol-and-testing.md`. On SDK 88.2, `ble_gatt_characteristic_update()` returns true on error.
+- Preserve restoration of the Flipper's normal Bluetooth profile when the app exits. For an authorized firmware install, use the normal updater and keep the pre-update backups and stock 1.5.1 available for rollback.
 
 ## Scope and repository hygiene
 
@@ -21,7 +25,7 @@
 - The app currently implements the shutter toggle. Record experiments separately from hardware-verified behavior.
 - Update the relevant documentation when behavior, compatibility or build instructions change.
 - Preserve intentional local changes. Do not add generated SDK files or firmware checkouts to the repository.
-- An app-source license is pending maintainer selection. Do not select or replace it without the maintainer's instruction.
+- Keep the license split explicit. The app source is MIT and the firmware patch is GPLv3. Get the maintainer's instruction before changing either license.
 
 ## Writing
 
