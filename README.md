@@ -36,4 +36,5 @@ See the [protocol and hardware notes](docs/protocol-and-testing.md) for the pack
 
 ## Licensing
 
-The firmware patch modifies Flipper's GPLv3 firmware. Its upstream license is in [firmware/LICENSE](firmware/LICENSE). An app-source license is pending maintainer selection before publication.
+The Flipper app source is available under the [MIT License](LICENSE).
+The [firmware patch](firmware/insta360-advertising.patch) modifies Flipper firmware and is covered by [GPLv3](firmware/LICENSE).
