@@ -1,9 +1,32 @@
+# Local build output and SDK state
 /dist/
+/build/
 /.vscode/
 /.sconsign.dblite
 /.ufbt/
-.DS_Store
+
+# Generated app and firmware artifacts
 *.fap
 *.elf
 *.dfu
 *.tgz
+*.bin
+*.hex
+*.map
+
+# Private hardware captures and backups
+/captures/
+/backups/
+*.pcap
+*.pcapng
+
+# Local environment and editor files
+.env
+.env.*
+!.env.example
+.DS_Store
+*.swp
+*.swo
+*~
+__pycache__/
+*.pyc
