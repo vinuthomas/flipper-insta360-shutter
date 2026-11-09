@@ -29,7 +29,7 @@ These models are potentially compatible with this app's shutter control based on
 
 ## Why the firmware patch is needed
 
-The GO 3S didn't list the app on stock firmware 1.5.1. Stock firmware limits the app's advertised name to 16 characters and labels the advertised `CE80` UUID list as incomplete. The app can host the remote's Bluetooth service on stock firmware, but it can't change those two parts of the advertisement.
+The Stock Firmware doesn't allow an advertising name > 16 characters required to advertise the name `Insta360 GPS Remote`. The GO 3S didn't list the app attempt to advertise a shortened name on stock firmware 1.5.1. Stock firmware limits the app's advertised name to 16 characters and labels the advertised `CE80` UUID list as incomplete. The app can host the remote's Bluetooth service on stock firmware, but it can't change those two parts of the advertisement.
 
 The [firmware patch](firmware/README.md) advertises the full `Insta360 GPS Remote` name and puts `CE80` in a complete 16-bit service list. With both changes in place, the GO 3S discovered the Flipper, connected and responded to the shutter button. We tested the changes together, so we haven't isolated which one the camera requires.
 
@@ -41,7 +41,7 @@ Install the patched firmware first, then install the app. The firmware patch is 
 
 The patch targets **Flipper Zero firmware 1.5.1**. Follow the [firmware build and installation instructions](firmware/README.md) to:
 
-1. Back up the Flipper's internal storage and microSD contents. Keep stock 1.5.1 available for rollback.
+1. Back up the Flipper's internal storage and microSD contents. All your content should be retained with this patched update, but back up just in case.
 2. Apply the patch to the specified 1.5.1 source revision and build the update package.
 3. Copy the generated update directory to the microSD card and install it through the normal updater.
 4. Let the Flipper reboot before installing the app.
@@ -70,7 +70,7 @@ With the patched firmware installed:
 
 If the remote is missing, scan from nRF Connect on Android. Look for the full name and a **Complete list of 16-bit Service UUIDs** containing `CE80`. Disconnect any scanner that connected to the Flipper before trying again on the camera.
 
-See the [protocol and hardware notes](docs/protocol-and-testing.md) for the packet format and test scope. The app currently covers shutter control. Mode switching, wake-up, GPS and reconnect after a power cycle are outside the verified path.
+See the [protocol and hardware notes](docs/protocol-and-testing.md) for the packet format and test scope. The app currently covers shutter control only. Mode switching, wake-up, GPS and reconnect after a power cycle are outside the verified path and may be something I add later.
 
 ## Licensing
 
