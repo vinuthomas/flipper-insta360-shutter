@@ -10,6 +10,8 @@
 #include <storage/storage.h>
 #include <stdatomic.h>
 
+#include "remote_screen.h"
+
 #define TAG "InstaRemote"
 #define REMOTE_NAME "Insta360 GPS Rem"
 
@@ -24,7 +26,7 @@ enum {
     LinkSubscribed = 2,
 };
 
-enum { ButtonFrameSize = 9 };
+enum { ButtonFrameSize = 9, ModeConfirmDelayMs = 300 };
 static const uint8_t version[] = {0x01, 0x02};
 
 static const BleGattCharacteristicParams primary_chars[] = {
@@ -59,11 +61,15 @@ typedef struct {
     atomic_uint link;
     atomic_uint writes;
     atomic_uint sequence;
+    atomic_uint connection_generation;
 } RemoteProfile;
 
 typedef enum {
     ResultNone,
     ResultShutterQueued,
+    ResultScreenQueued,
+    ResultSleepQueued,
+    ResultModeQueued,
     ResultError,
 } CommandResult;
 
@@ -87,11 +93,13 @@ static BleEventAckStatus remote_event(void* event, void* context) {
        data[0] == HCI_LE_CONNECTION_COMPLETE_SUBEVT_CODE && data[1] == 0) {
         atomic_store(&remote->writes, 0);
         atomic_store(&remote->sequence, 0);
+        atomic_fetch_add(&remote->connection_generation, 1);
         atomic_store(&remote->link, LinkConnected);
         FURI_LOG_I(TAG, "BLE link connected");
     } else if(packet[1] == HCI_DISCONNECTION_COMPLETE_EVT_CODE && length >= 4 &&
               data[0] == 0) {
         atomic_store(&remote->link, 0);
+        atomic_fetch_add(&remote->connection_generation, 1);
         FURI_LOG_I(TAG, "BLE link disconnected, reason %02X", data[3]);
     } else if(packet[1] == HCI_VENDOR_SPECIFIC_DEBUG_EVT_CODE && length >= 10 &&
               data[0] == 0x01 && data[1] == 0x0c) {
@@ -163,6 +171,7 @@ static FuriHalBleProfileBase* remote_start(FuriHalBleProfileParams params) {
     atomic_init(&remote->link, 0);
     atomic_init(&remote->writes, 0);
     atomic_init(&remote->sequence, 0);
+    atomic_init(&remote->connection_generation, 0);
 
     const Service_UUID_t primary_uuid = {.Service_UUID_16 = 0xce80};
     // One service record, two per characteristic and one extra for CE82's CCCD.
@@ -208,51 +217,55 @@ static const FuriHalBleProfileTemplate remote_template = {
 static void remote_draw(Canvas* canvas, void* context) {
     RemoteApp* app = context;
     canvas_clear(canvas);
+    canvas_set_color(canvas, ColorBlack);
+    canvas_draw_box(canvas, 0, 0, 128, 13);
+    canvas_set_color(canvas, ColorWhite);
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str(canvas, 2, 11, "Insta360 Shutter");
+    canvas_draw_str(canvas, 3, 10, "Insta360");
     canvas_set_font(canvas, FontSecondary);
+    unsigned link = app->profile ? atomic_load(&app->profile->link) : 0;
+    const char* status = !app->profile ? "Error" :
+                         (link & LinkSubscribed) ? "Ready" :
+                         (link & LinkConnected) ? "Linking" : "Pairing";
+    canvas_draw_str_aligned(canvas, 125, 10, AlignRight, AlignBottom, status);
+    canvas_set_color(canvas, ColorBlack);
     if(!app->profile) {
-        canvas_draw_str(canvas, 2, 28, "BLE profile failed");
-        canvas_draw_str(canvas, 2, 58, "Back: exit");
-        return;
+        canvas_draw_str(canvas, 6, 30, "Bluetooth unavailable");
+        canvas_draw_str(canvas, 6, 43, "Exit and try again");
+    } else {
+        remote_draw_controls(canvas);
     }
-
-    unsigned link = atomic_load(&app->profile->link);
-    const char* status = "Waiting for BLE link";
-    if(link & LinkSubscribed) {
-        status = "CE82 subscribed";
-    } else if(link & LinkConnected) {
-        status = "Linked; waiting for CE82";
-    }
-    canvas_draw_str(canvas, 2, 23, status);
-
-    char writes[30];
-    snprintf(writes, sizeof(writes), "CE81 writes: %u", atomic_load(&app->profile->writes));
-    canvas_draw_str(canvas, 2, 35, writes);
-
-    if(link & LinkSubscribed) {
-        const char* message = "OK: shutter";
+    canvas_draw_line(canvas, 0, 52, 127, 52);
+    canvas_set_font(canvas, FontSecondary);
+    const char* message = "Select remote on camera";
+    if(!app->profile) {
+        message = "Back: exit";
+    } else if(link & LinkSubscribed) {
         switch(atomic_load(&app->result)) {
-        case ResultShutterQueued:
-            message = "Shutter queued";
-            break;
-        case ResultError:
-            message = "BLE update failed";
-            break;
-        default:
-            break;
+        case ResultShutterQueued: message = "Shutter sent"; break;
+        case ResultScreenQueued: message = "Screen toggle sent"; break;
+        case ResultSleepQueued: message = "Sleep sent"; break;
+        case ResultModeQueued: message = "Mode sequence sent"; break;
+        case ResultError: message = "Send failed; try again"; break;
+        default: message = "Back: exit"; break;
         }
-        canvas_draw_str(canvas, 2, 47, message);
+    } else if(link & LinkConnected) {
+        message = "Waiting for camera";
     }
-    canvas_draw_str(canvas, 2, 60, "Back: exit");
+    canvas_draw_str_aligned(canvas, 64, 63, AlignCenter, AlignBottom, message);
 }
 
 static void remote_input(InputEvent* event, void* context) {
     RemoteApp* app = context;
+    if(event->type == InputTypeLong && event->key == InputKeyRight) {
+        furi_message_queue_put(app->input, &event->key, 0);
+        return;
+    }
     if(event->type != InputTypeShort) return;
     if(event->key == InputKeyBack) {
         atomic_store(&app->exit_requested, true);
-    } else if(event->key == InputKeyOk) {
+    } else if(event->key == InputKeyOk || event->key == InputKeyLeft ||
+              event->key == InputKeyUp) {
         furi_message_queue_put(app->input, &event->key, 0);
     }
 }
@@ -283,13 +296,50 @@ int32_t insta360_remote_app(void* context) {
         if(furi_message_queue_get(app.input, &key, 200) == FuriStatusOk &&
            app.profile && (atomic_load(&app.profile->link) & LinkSubscribed) &&
            !atomic_load(&app.exit_requested)) {
+            unsigned generation = atomic_load(&app.profile->connection_generation);
             uint8_t sequence = (uint8_t)atomic_fetch_add(&app.profile->sequence, 2);
             uint8_t frame[ButtonFrameSize] = {
                 0xfc, 0xef, 0xfe, 0x86, sequence, 0x03, 0x01, 0x02, 0x00};
+            CommandResult result = ResultShutterQueued;
+            if(key == InputKeyLeft) {
+                frame[7] = 0x00;
+                result = ResultScreenQueued;
+            } else if(key == InputKeyUp) {
+                frame[7] = 0x01;
+                result = ResultModeQueued;
+            } else if(key == InputKeyRight) {
+                frame[7] = 0x00;
+                frame[8] = 0x03;
+                result = ResultSleepQueued;
+            }
             // SDK 1.5.1 returns true on error for this function.
             bool error = ble_gatt_characteristic_update(
                 app.profile->primary_service, &app.profile->primary[RemoteNotify], frame);
-            atomic_store(&app.result, error ? ResultError : ResultShutterQueued);
+            if(!error && key == InputKeyUp) {
+                // One-press mode change verified by the user on 9 November 2026.
+                for(unsigned elapsed = 0; elapsed < ModeConfirmDelayMs; elapsed += 10) {
+                    if(atomic_load(&app.exit_requested) ||
+                       atomic_load(&app.profile->connection_generation) != generation ||
+                       !(atomic_load(&app.profile->link) & LinkSubscribed)) {
+                        error = true;
+                        break;
+                    }
+                    furi_delay_ms(10);
+                }
+                if(!error && !atomic_load(&app.exit_requested) &&
+                   atomic_load(&app.profile->connection_generation) == generation &&
+                   (atomic_load(&app.profile->link) & LinkSubscribed)) {
+                    frame[4] = (uint8_t)atomic_fetch_add(&app.profile->sequence, 2);
+                    frame[7] = 0x02;
+                    error = ble_gatt_characteristic_update(
+                        app.profile->primary_service,
+                        &app.profile->primary[RemoteNotify],
+                        frame);
+                } else {
+                    error = true;
+                }
+            }
+            atomic_store(&app.result, error ? ResultError : result);
         }
         if(app.profile && !(atomic_load(&app.profile->link) & LinkSubscribed)) {
             atomic_store(&app.result, ResultNone);
