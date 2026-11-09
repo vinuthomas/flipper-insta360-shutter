@@ -105,7 +105,3 @@ Shutter, one-press mode change, screen toggle and sleep passed camera testing. *
 
 The Flipper app source is available under the [MIT License](LICENSE).
 The [firmware patch](firmware/insta360-advertising.patch) modifies Flipper firmware and is covered by [GPLv3](firmware/LICENSE).
-
-## Screen preview
-
-Regenerate the SVG with `python3 scripts/render_screen.py` after changing `remote_screen.h`. The preview uses approximate fonts rather than the firmware fonts. The screen reports connection readiness and commands sent, not camera recording state.

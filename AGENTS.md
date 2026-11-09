@@ -33,3 +33,7 @@
 - Keep paragraphs compact. Use lists for steps or comparisons.
 - Preserve supplied experience and judgment. Do not invent hardware tests, personal experiences or compatibility claims.
 - Avoid em dashes, Oxford commas, a comma before "and", hype and filler.
+
+## Screen preview
+
+Regenerate the SVG with `python3 scripts/render_screen.py` after changing `remote_screen.h`. The preview uses approximate fonts rather than the firmware fonts. The screen reports connection readiness and commands sent, not camera recording state.
